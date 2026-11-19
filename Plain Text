@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Teacher CardBox</title>
+
+<style>
+:root{
+--paper:#f5f1e8;
+--card:#fffdf8;
+--nav:#284b63;
+--shadow:0 3px 12px rgba(0,0,0,.15);
+}
+
+body{
+margin:0;
+font-family:Arial, Helvetica, sans-serif;
+background:var(--paper);
+}
+
+header{
+background:var(--nav);
+color:white;
+text-align:center;
+padding:16px;
+font-size:1.5rem;
+font-weight:bold;
+}
+
+nav{
+display:flex;
+overflow-x:auto;
+background:white;
+border-bottom:1px solid #ddd;
+}
+
+nav button{
+border:none;
+background:white;
+padding:12px;
+cursor:pointer;
+flex-shrink:0;
+}
+
+nav button.active{
+background:var(--nav);
+color:white;
+}
+
+.controls{
+padding:10px;
+}
+
+.add-button{
+background:var(--nav);
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:8px;
+cursor:pointer;
+}
+
+#cardContainer{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+gap:15px;
+padding:15px;
+}
+
+.card{
+background:var(--card);
+padding:15px;
+border-radius:10px;
+box-shadow:var(--shadow);
+border-left:10px solid gray;
+}
+
+.card h3{
+margin-top:0;
+}
+
+.student{
+font-weight:bold;
+margin-bottom:5px;
+}
+
+.note{
+margin-top:10px;
+font-size:.95rem;
+}
+
+.actions{
+margin-top:15px;
+display:flex;
+gap:8px;
+}
+
+.actions button{
+border:none;
+padding:8px;
+cursor:pointer;
+border-radius:5px;
+}
+
+.complete{
+background:#4caf50;
+color:white;
+}
+
+.delete{
+background:#c62828;
+color:white;
+}
+
+.yellow{
+border-left-color:#d4a017;
+}
+
+.blue{
+border-left-color:#1976d2;
+}
+
+.green{
+border-left-color:#2e7d32;
+}
+
+.purple{
+border-left-color:#7b1fa2;
+}
+
+.red{
+border-left-color:#c62828;
+}
+
+dialog{
+border:none;
+border-radius:10px;
+width:min(90%,500px);
+}
+
+dialog form{
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+input, textarea, select{
+padding:8px;
+font-size:1rem;
+}
+
+textarea{
+resize:vertical;
+}
+
+.footer{
+text-align:center;
+padding:25px;
+color:#666;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+📇 Teacher CardBox
+</header>
+
+<nav id="tabs"></nav>
+
+<div class="controls">
+<button class="add-button" onclick="showDialog()">
++ New Card
+</button>
+</div>
+
+<div id="cardContainer"></div>
+
+<div class="footer">
+Teacher CardBox Version 1
+</div>
+
+<dialog id="cardDialog">
+
+<form id="cardForm">
+
+<input
+id="title"
+placeholder="Task Title"
+required>
+
+<select id="section">
+
+<option>Today</option>
+<option>Weekly</option>
+<option>Monthly</option>
+<option>Students</option>
+<option>Someday</option>
+<option>Archive</option>
+
+</select>
+
+<input
+id="student"
+placeholder="Student Name (optional)">
+
+<input
+id="period"
+placeholder="Class Period (optional)">
+
+<select id="color">
+
+<option value="yellow">Yellow</option>
+<option value="blue">Blue</option>
+<option value="green">Green</option>
+<option value="purple">Purple</option>
+<option value="red">Red</option>
+
+</select>
+
+<textarea
+id="note"
+rows="4"
+placeholder="Short note">
+</textarea>
+
+<div>
+
+<button type="submit">
+Save Card
+</button>
+
+<button type="button"
+onclick="closeDialog()">
+Cancel
+</button>
+
+</div>
+
+</form>
+
+</dialog>
+
+<script>
+
+const sections = [
+"Today",
+"Weekly",
+"Monthly",
+"Students",
+"Someday",
+"Archive"
+];
+
+let currentSection = "Today";
+
+let cards =
+JSON.parse(
+localStorage.getItem("teacherCardBox")
+|| "[]"
+);
+
+function saveCards(){
+localStorage.setItem(
+"teacherCardBox",
+JSON.stringify(cards)
+);
+renderCards();
+}
+
+function renderTabs(){
+
+const tabs =
+document.getElementById("tabs");
+
+tabs.innerHTML = "";
+
+sections.forEach(section=>{
+
+const btn =
+document.createElement("button");
+
+btn.textContent = section;
+
+if(section===currentSection){
+btn.classList.add("active");
+}
+
+btn.onclick = ()=>{
+currentSection = section;
+renderTabs();
+renderCards();
+};
+
+tabs.appendChild(btn);
+
+});
+
+}
+
+function renderCards(){
+
+const container =
+document.getElementById("cardContainer");
+
+container.innerHTML = "";
+
+const filtered =
+cards.filter(
+c=>c.section===currentSection
+);
+
+filtered.forEach(card=>{
+
+const div =
+document.createElement("div");
+
+div.className =
+`card ${card.color}`;
+
+div.innerHTML =
+
+`
+<h3>${card.title}</h3>
+
+${card.student
+? `<div class="student">🎓 ${card.student}</div>`
+: ""
+}
+
+${card.period
+? `<div>Period: ${card.period}</div>`
+: ""
+}
+
+${card.note
+? `<div class="note">${card.note}</div>`
+: ""
+}
+
+<div class="actions">
+
+<button
+class="complete"
+onclick="completeCard(${card.id})">
+Complete
+</button>
+
+<button
+class="delete"
+onclick="deleteCard(${card.id})">
+Delete
+</button>
+
+</div>
+`;
+
+container.appendChild(div);
+
+});
+
+}
+
+function showDialog(){
+document
+.getElementById("cardDialog")
+.showModal();
+}
+
+function closeDialog(){
+document
+.getElementById("cardDialog")
+.close();
+}
+
+document
+.getElementById("cardForm")
+.addEventListener("submit", e=>{
+
+e.preventDefault();
+
+cards.push({
+
+id: Date.now(),
+
+title:
+document.getElementById("title").value,
+
+section:
+document.getElementById("section").value,
+
+student:
+document.getElementById("student").value,
+
+period:
+document.getElementById("period").value,
+
+color:
+document.getElementById("color").value,
+
+note:
+document.getElementById("note").value
+
+});
+
+saveCards();
+
+e.target.reset();
+
+closeDialog();
+
+});
+
+function completeCard(id){
+
+const card =
+cards.find(c=>c.id===id);
+
+if(card){
+card.section = "Archive";
+}
+
+saveCards();
+
+}
+
+function deleteCard(id){
+
+cards =
+cards.filter(
+c=>c.id!==id
+);
+
+saveCards();
+
+}
+
+renderTabs();
+renderCards();
+
+</script>
+
+</body>
+</html>
